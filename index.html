@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kering · FUP Unificador</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+  /* ─── TOKENS ─────────────────────────────────────────────── */
+  :root {
+    --navy:        #0b1437;
+    --navy-mid:    #112055;
+    --navy-card:   #162660;
+    --electric:    #3a7bd5;
+    --electric-hi: #5b9cf6;
+    --gold:        #f0c040;
+    --gold-dim:    #c89b20;
+    --glass-bg:    rgba(255,255,255,0.055);
+    --glass-bdr:   rgba(255,255,255,0.10);
+    --text-hi:     #e8eaf6;
+    --text-mid:    #9aa3c2;
+    --text-lo:     #5a6380;
+    --success:     #43e89b;
+    --danger:      #ff5e7e;
+    --warn:        #ffb347;
+    --radius:      14px;
+    --radius-sm:   8px;
+  }
+
+  /* ─── RESET ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--text-hi);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── BACKGROUND MESH ───────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 15% 20%, rgba(58,123,213,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 85% 75%, rgba(240,192,64,0.08) 0%, transparent 55%),
+      linear-gradient(175deg, #0b1437 0%, #0e1a44 50%, #0b1437 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── LAYOUT ────────────────────────────────────────────── */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ─── HEADER ────────────────────────────────────────────── */
+  header {
+    padding: 48px 0 36px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .brand-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--electric) 0%, var(--electric-hi) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 20px rgba(58,123,213,0.45);
+  }
+
+  .header-text {}
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(22px, 4vw, 30px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text-hi);
+  }
+
+  h1 span { color: var(--electric-hi); }
+
+  .subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--text-mid);
+    line-height: 1.5;
+  }
+
+  /* ─── SECTION LABEL ─────────────────────────────────────── */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--electric-hi);
+    margin-bottom: 10px;
+  }
+
+  /* ─── CARD ──────────────────────────────────────────────── */
+  .card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-bdr);
+    border-radius: var(--radius);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  /* ─── DROP ZONE ─────────────────────────────────────────── */
+  .drop-zone {
+    border: 2px dashed rgba(58,123,213,0.45);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+    background: rgba(58,123,213,0.04);
+  }
+
+  .drop-zone:hover,
+  .drop-zone.drag-over {
+    border-color: var(--electric-hi);
+    background: rgba(58,123,213,0.10);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+    display: block;
+    filter: drop-shadow(0 2px 8px rgba(58,123,213,0.5));
+  }
+
+  .drop-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-hi);
+    margin-bottom: 6px;
+  }
+
+  .drop-sub {
+    font-size: 12px;
+    color: var(--text-mid);
+  }
+
+  .drop-sub strong {
+    color: var(--electric-hi);
+    font-weight: 500;
+  }
+
+  /* ─── FILE LIST ─────────────────────────────────────────── */
+  #file-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .file-chip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(58,123,213,0.10);
+    border: 1px solid rgba(58,123,213,0.20);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .file-chip .chip-icon { font-size: 16px; }
+
+  .chip-name {
+    flex: 1;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-hi);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chip-client {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(240,192,64,0.15);
+    color: var(--gold);
+    border: 1px solid rgba(240,192,64,0.25);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .chip-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-lo);
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .chip-remove:hover { color: var(--danger); }
+
+  /* ─── ACTIONS ROW ───────────────────────────────────────── */
+  .actions-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* ─── BUTTONS ───────────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+    padding: 10px 20px;
+    white-space: nowrap;
+  }
+
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--electric) 0%, #2563d4 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(58,123,213,0.40);
+  }
+  .btn-primary:not(:disabled):hover { box-shadow: 0 6px 24px rgba(58,123,213,0.55); }
+
+  .btn-ghost {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-bdr);
+    color: var(--text-mid);
+  }
+  .btn-ghost:not(:disabled):hover { color: var(--text-hi); border-color: rgba(255,255,255,0.2); }
+
+  .btn-success {
+    background: linear-gradient(135deg, #22c479 0%, #16a85f 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(34,196,121,0.35);
+    flex: 1;
+    justify-content: center;
+    padding: 14px 20px;
+    font-size: 14px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .btn-success:not(:disabled):hover { box-shadow: 0 6px 24px rgba(34,196,121,0.50); }
+
+  /* ─── PROGRESS ──────────────────────────────────────────── */
+  #progress-section { display: none; }
+
+  .progress-bar-wrap {
+    background: rgba(255,255,255,0.07);
+    border-radius: 100px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--electric), var(--electric-hi));
+    width: 0%;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 12px rgba(91,156,246,0.6);
+  }
+
+  #progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-mid);
+    margin-top: 6px;
+  }
+
+  /* ─── LOG ───────────────────────────────────────────────── */
+  #log-section { display: none; }
+
+  #log-box {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--glass-bdr);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    max-height: 180px;
+    overflow-y: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--text-mid);
+  }
+
+  .log-ok   { color: var(--success); }
+  .log-warn { color: var(--warn); }
+  .log-err  { color: var(--danger); }
+
+  /* ─── RESULT BANNER ─────────────────────────────────────── */
+  #result-banner {
+    display: none;
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    border: 1px solid rgba(67,232,155,0.25);
+    background: rgba(67,232,155,0.07);
+    margin-top: 0;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .banner-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .banner-icon { font-size: 24px; }
+
+  .banner-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  .banner-meta {
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.6;
+  }
+
+  /* ─── INFO GRID ─────────────────────────────────────────── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .info-cell {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-bdr);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+
+  .info-cell .cell-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-lo);
+    margin-bottom: 4px;
+  }
+
+  .info-cell .cell-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-hi);
+  }
+
+  /* ─── FOOTER ────────────────────────────────────────────── */
+  footer {
+    text-align: center;
+    padding: 32px 0 0;
+    font-size: 11px;
+    color: var(--text-lo);
+    font-family: 'DM Mono', monospace;
+  }
+
+  footer span { color: var(--electric-hi); }
+
+  /* ─── ANIMATIONS ────────────────────────────────────────── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── SCROLLBAR ─────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+  /* ─── RESPONSIVE ────────────────────────────────────────── */
+  @media (max-width: 540px) {
+    header { flex-direction: column; gap: 14px; }
+    .actions-row { flex-direction: column; }
+    .btn-success { width: 100%; }
+  }
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand-badge">📦</div>
+    <div class="header-text">
+      <p class="eyebrow">Kering · Comércio Exterior</p>
+      <h1>FUP <span>Unificador</span></h1>
+      <p class="subtitle">
+        Consolida múltiplos arquivos de Follow-Up Kering em uma única base formatada,<br>
+        com cálculos de lead time e identificação automática de cliente.
+      </p>
+    </div>
+  </header>
+
+  <!-- DROP ZONE CARD -->
+  <div class="card">
+    <p class="section-label">01 — Arquivos de entrada</p>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" accept=".xlsx,.xls" multiple />
+      <span class="drop-icon">📂</span>
+      <p class="drop-title">Arraste os arquivos Excel ou clique para selecionar</p>
+      <p class="drop-sub">
+        Aceita <strong>.xlsx / .xls</strong> · Aba iniciada com <strong>FOLLOW</strong> será identificada automaticamente
+      </p>
+    </div>
+
+    <!-- File list -->
+    <div id="file-list"></div>
+  </div>
+
+  <!-- ACTIONS CARD -->
+  <div class="card">
+    <p class="section-label">02 — Ações</p>
+    <div class="actions-row">
+      <button class="btn btn-ghost" id="btn-clear">🗑 Limpar lista</button>
+      <button class="btn btn-success" id="btn-process" disabled>
+        🚀 Processar e Baixar Unificado
+      </button>
+    </div>
+  </div>
+
+  <!-- PROGRESS CARD -->
+  <div class="card" id="progress-section">
+    <p class="section-label">03 — Progresso</p>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <p id="progress-label">Aguardando…</p>
+  </div>
+
+  <!-- LOG CARD -->
+  <div class="card" id="log-section">
+    <p class="section-label">Log de processamento</p>
+    <div id="log-box"></div>
+  </div>
+
+  <!-- RESULT BANNER -->
+  <div id="result-banner">
+    <div class="banner-top">
+      <span class="banner-icon">✅</span>
+      <span class="banner-title">Processamento concluído!</span>
+    </div>
+    <p class="banner-meta" id="banner-meta"></p>
+    <br />
+    <div class="info-grid" id="info-grid"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Kering · FUP Unificador &nbsp;·&nbsp; <span>Client-side · GitHub Pages</span> &nbsp;·&nbsp; Nenhum dado é enviado a servidores externos.</p>
+  </footer>
+
+</div>
+
+<!-- ===== JAVASCRIPT ====================================== -->
+<script>
+/* ── State ─────────────────────────────────────────────── */
+const files = []; // { name, file }
+
+/* ── Elements ──────────────────────────────────────────── */
+const dropZone      = document.getElementById('drop-zone');
+const fileInput     = document.getElementById('file-input');
+const fileList      = document.getElementById('file-list');
+const btnClear      = document.getElementById('btn-clear');
+const btnProcess    = document.getElementById('btn-process');
+const progressSect  = document.getElementById('progress-section');
+const progressFill  = document.getElementById('progress-fill');
+const progressLabel = document.getElementById('progress-label');
+const logSection    = document.getElementById('log-section');
+const logBox        = document.getElementById('log-box');
+const resultBanner  = document.getElementById('result-banner');
+const bannerMeta    = document.getElementById('banner-meta');
+const infoGrid      = document.getElementById('info-grid');
+
+/* ── Column mapping (Excel letter → friendly name) ─────── */
+const COLUMN_MAP = {
+  A:  'SHIPMENT',
+  B:  'INVOICE',
+  F:  'NUMBER OF BOXES',
+  G:  'NUMBER OF ITEMS',
+  BB: 'STATUS',
+  D:  'INVOICE RECEIPT',
+  AB: 'SHIPPING INSTRUCTIONS',
+  AH: 'ETA / ATA',
+  AM: 'ID REGISTRATION DATE',
+  AQ: 'CUSTOMS CLEARANCE',
+  AT: 'DANFE REQUEST DATE',
+  AU: 'DANFE DATE',
+  AX: 'DELIVERY DATE'
+};
+
+const FINAL_ORDER = [
+  'SHIPMENT', 'INVOICE', 'NUMBER OF BOXES', 'NUMBER OF ITEMS', 'STATUS',
+  'INVOICE RECEIPT', 'SHIPPING INSTRUCTIONS', 'ETA / ATA', 'ID REGISTRATION DATE',
+  'CUSTOMS CLEARANCE', 'DANFE REQUEST DATE', 'DANFE DATE', 'DELIVERY DATE'
+];
+
+const DATE_COLS = [
+  'INVOICE RECEIPT', 'SHIPPING INSTRUCTIONS', 'ETA / ATA', 'ID REGISTRATION DATE',
+  'CUSTOMS CLEARANCE', 'DANFE REQUEST DATE', 'DANFE DATE', 'DELIVERY DATE'
+];
+
+const LEAD_TIMES = [
+  { col: 'Invoice receipt x GL',              a: 'SHIPPING INSTRUCTIONS',    b: 'INVOICE RECEIPT' },
+  { col: 'GL x ARR',                          a: 'ETA / ATA',                b: 'SHIPPING INSTRUCTIONS' },
+  { col: 'ARR x ID Reg',                      a: 'ID REGISTRATION DATE',     b: 'ETA / ATA' },
+  { col: 'Reg x CC',                          a: 'CUSTOMS CLEARANCE',        b: 'ID REGISTRATION DATE' },
+  { col: 'Solicitação - CC x NF Request',     a: 'DANFE REQUEST DATE',       b: 'CUSTOMS CLEARANCE' },
+  { col: 'Recebimento - CC x NF Request',     a: 'DANFE DATE',               b: 'DANFE REQUEST DATE' },
+  { col: 'NF Request x POD',                  a: 'DELIVERY DATE',            b: 'DANFE DATE' }
+];
+
+const CLIENT_KEYWORDS = ['GUCCI', 'YSL', 'BALENCIAGA', 'BOTTEGA'];
+
+/* ── Helpers ────────────────────────────────────────────── */
+function colLetterToIdx(col) {
+  // Returns 0-based index
+  let idx = 0;
+  for (const ch of col.toUpperCase().trim()) {
+    idx = idx * 26 + (ch.charCodeAt(0) - 64);
+  }
+  return idx - 1;
+}
+
+function extractClient(filename) {
+  const upper = filename.toUpperCase();
+  for (const k of CLIENT_KEYWORDS) {
+    if (upper.includes(k)) return k;
+  }
+  return 'N/A';
+}
+
+function excelSerialToDate(serial) {
+  if (serial == null || serial === '' || typeof serial === 'string') return null;
+  if (typeof serial === 'object' && serial instanceof Date) return serial;
+  // Excel date serial (1900 base, accounting for Lotus bug)
+  const utc = (serial - 25569) * 86400 * 1000;
+  const d = new Date(utc);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function parseDate(val) {
+  if (val == null || val === '') return null;
+  if (typeof val === 'number') return excelSerialToDate(val);
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val === 'string') {
+    // Try common Brazilian formats: dd/mm/yyyy or yyyy-mm-dd
+    const br = val.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (br) return new Date(+br[3], +br[2]-1, +br[1]);
+    const iso = new Date(val);
+    return isNaN(iso.getTime()) ? null : iso;
+  }
+  return null;
+}
+
+function dateDiffDays(a, b) {
+  if (!a || !b) return null;
+  return Math.round((a.getTime() - b.getTime()) / 86400000);
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function log(msg, type = '') {
+  const p = document.createElement('p');
+  p.className = type ? `log-${type}` : '';
+  p.textContent = msg;
+  logBox.appendChild(p);
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+/* ── Render file list ───────────────────────────────────── */
+function renderList() {
+  fileList.innerHTML = '';
+  files.forEach((f, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `
+      <span class="chip-icon">📄</span>
+      <span class="chip-name">${f.name}</span>
+      <span class="chip-client">${f.client}</span>
+      <button class="chip-remove" data-idx="${i}" title="Remover">✕</button>
+    `;
+    fileList.appendChild(chip);
+  });
+  btnProcess.disabled = files.length === 0;
+  btnClear.disabled   = files.length === 0;
+}
+
+/* ── Add files ──────────────────────────────────────────── */
+function addFiles(newFiles) {
+  for (const f of newFiles) {
+    if (!files.find(x => x.name === f.name)) {
+      files.push({ name: f.name, file: f, client: extractClient(f.name) });
+    }
+  }
+  renderList();
+}
+
+/* ── Drop zone events ───────────────────────────────────── */
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  addFiles([...e.dataTransfer.files].filter(f => f.name.match(/\.xlsx?$/i)));
+});
+fileInput.addEventListener('change', () => {
+  addFiles([...fileInput.files]);
+  fileInput.value = '';
+});
+
+/* ── Clear ──────────────────────────────────────────────── */
+btnClear.addEventListener('click', () => {
+  files.length = 0;
+  renderList();
+  logBox.innerHTML = '';
+  logSection.style.display = 'none';
+  progressSect.style.display = 'none';
+  resultBanner.style.display = 'none';
+  progressFill.style.width = '0%';
+});
+
+/* ── Remove individual ──────────────────────────────────── */
+fileList.addEventListener('click', e => {
+  const btn = e.target.closest('.chip-remove');
+  if (!btn) return;
+  files.splice(+btn.dataset.idx, 1);
+  renderList();
+});
+
+/* ── Process ────────────────────────────────────────────── */
+btnProcess.addEventListener('click', processFiles);
+
+async function processFiles() {
+  // Reset UI
+  logBox.innerHTML = '';
+  logSection.style.display = 'block';
+  progressSect.style.display = 'block';
+  resultBanner.style.display = 'none';
+  btnProcess.disabled = true;
+
+  const allRows = [];
+  const total = files.length;
+
+  for (let i = 0; i < total; i++) {
+    const f = files[i];
+    const pct = Math.round((i / total) * 100);
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = `Lendo ${f.name}… (${i+1}/${total})`;
+
+    try {
+      const rows = await readFile(f.file, f.client);
+      allRows.push(...rows);
+      log(`✓ ${f.name}  →  ${rows.length} linha(s)  [${f.client}]`, 'ok');
+    } catch (err) {
+      log(`✗ ${f.name}  →  ${err.message}`, 'err');
+      btnProcess.disabled = false;
+      return;
+    }
+  }
+
+  progressFill.style.width = '100%';
+  progressLabel.textContent = 'Consolidando e exportando…';
+  log('Gerando arquivo Excel unificado…', '');
+
+  try {
+    exportExcel(allRows);
+  } catch (err) {
+    log(`Erro ao exportar: ${err.message}`, 'err');
+    btnProcess.disabled = false;
+    return;
+  }
+
+  // Stats
+  const clients = [...new Set(allRows.map(r => r['Cliente']))].filter(Boolean);
+  infoGrid.innerHTML = `
+    <div class="info-cell"><p class="cell-label">Arquivos</p><p class="cell-value">${total}</p></div>
+    <div class="info-cell"><p class="cell-label">Linhas</p><p class="cell-value">${allRows.length}</p></div>
+    <div class="info-cell"><p class="cell-label">Clientes</p><p class="cell-value">${clients.length || '—'}</p></div>
+  `;
+  bannerMeta.textContent = `Clientes identificados: ${clients.join(', ') || 'nenhum detectado no nome do arquivo'} · ${allRows.length} registros consolidados.`;
+  resultBanner.style.display = 'block';
+  btnProcess.disabled = false;
+  files.length = 0;
+  renderList();
+}
+
+/* ── Read one file ──────────────────────────────────────── */
+function readFile(fileObj, client) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: 'array', cellDates: false });
+
+        // Find "FOLLOW" sheet
+        let sheetName = wb.SheetNames[0];
+        for (const s of wb.SheetNames) {
+          if (s.toUpperCase().trim().startsWith('FOLLOW')) {
+            sheetName = s;
+            break;
+          }
+        }
+
+        const ws = wb.Sheets[sheetName];
+        // Read as array of arrays (raw values)
+        const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
+
+        if (raw.length < 2) {
+          resolve([]);
+          return;
+        }
+
+        // Header row = raw[0], data starts at raw[1]
+        const rows = [];
+        for (let r = 1; r < raw.length; r++) {
+          const rowArr = raw[r];
+          const row = {};
+
+          // Map columns
+          for (const [letter, name] of Object.entries(COLUMN_MAP)) {
+            const idx = colLetterToIdx(letter);
+            row[name] = idx < rowArr.length ? rowArr[idx] : null;
+          }
+
+          // Skip completely blank rows (all key fields null)
+          const isBlank = FINAL_ORDER.slice(0, 4).every(k => row[k] == null || row[k] === '');
+          if (isBlank) continue;
+
+          // Parse dates
+          for (const dc of DATE_COLS) {
+            row[dc] = parseDate(row[dc]);
+          }
+
+          // Lead times
+          for (const lt of LEAD_TIMES) {
+            row[lt.col] = dateDiffDays(row[lt.a], row[lt.b]);
+          }
+
+          row['Cliente'] = client;
+          rows.push(row);
+        }
+
+        resolve(rows);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('Falha na leitura do arquivo.'));
+    reader.readAsArrayBuffer(fileObj);
+  });
+}
+
+/* ── Export to Excel ────────────────────────────────────── */
+function exportExcel(allRows) {
+  const leadTimeCols = LEAD_TIMES.map(l => l.col);
+  const allCols = [...FINAL_ORDER, ...leadTimeCols, 'Cliente'];
+
+  // Build header row
+  const wsData = [allCols];
+
+  for (const row of allRows) {
+    const arr = allCols.map(col => {
+      const v = row[col];
+      if (v instanceof Date) return formatDate(v);
+      return v ?? '';
+    });
+    wsData.push(arr);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  const colWidths = allCols.map(col => {
+    const maxLen = Math.max(col.length, ...allRows.map(r => {
+      const v = r[col];
+      if (v instanceof Date) return 10;
+      return String(v ?? '').length;
+    }));
+    return { wch: Math.min(Math.max(maxLen + 3, 12), 40) };
+  });
+  ws['!cols'] = colWidths;
+
+  // Table range
+  const numRows = allRows.length + 1;
+  const numCols = allCols.length;
+  const lastCol = XLSX.utils.encode_col(numCols - 1);
+  ws['!ref'] = `A1:${lastCol}${numRows}`;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Base Unificada');
+
+  XLSX.writeFile(wb, 'FUP Kering - Unificado.xlsx');
+}
+</script>
+</body>
+</html>
