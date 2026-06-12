@@ -609,10 +609,15 @@ function extractClient(filename) {
 function excelSerialToDate(serial) {
   if (serial == null || serial === '' || typeof serial === 'string') return null;
   if (typeof serial === 'object' && serial instanceof Date) return serial;
+  
   // Excel date serial (1900 base, accounting for Lotus bug)
   const utc = (serial - 25569) * 86400 * 1000;
   const d = new Date(utc);
-  return isNaN(d.getTime()) ? null : d;
+  
+  // Compensação do Fuso Horário Local para evitar que a data caia no dia anterior
+  const localDate = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+  
+  return isNaN(localDate.getTime()) ? null : localDate;
 }
 
 function parseDate(val) {
