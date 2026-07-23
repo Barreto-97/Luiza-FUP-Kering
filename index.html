@@ -553,6 +553,7 @@ const COLUMN_MAP = {
   BB: 'STATUS',
   D:  'INVOICE RECEIPT',
   AB: 'SHIPPING INSTRUCTIONS',
+  AG: 'ETD',                // NOVA COLUNA INSERIDA
   AH: 'ETA / ATA',
   AL: 'DATA AUX AL',        // COLUNA AUXILIAR PARA O NOVO CÁLCULO
   AM: 'ID REGISTRATION DATE',
@@ -567,19 +568,20 @@ const COLUMN_MAP = {
 const FINAL_ORDER = [
   'SHIPMENT', 'INVOICE', 'NUMBER OF BOXES', 'NUMBER OF ITEMS', 'STATUS',
   'STORE LOCATION', 'CHANNEL', 'STATUS LEADTIME', 'INVOICE RECEIPT',
-  'SHIPPING INSTRUCTIONS', 'ETA / ATA', 'ID REGISTRATION DATE',
+  'SHIPPING INSTRUCTIONS', 'ETD', 'ETA / ATA', 'ID REGISTRATION DATE', // ETD INSERIDO AQUI
   'CUSTOMS CLEARANCE', 'DANFE REQUEST DATE', 'DANFE DATE', 'DELIVERY DATE'
 ];
   
 const DATE_COLS = [
-  'INVOICE RECEIPT', 'SHIPPING INSTRUCTIONS', 'ETA / ATA', 'DATA AUX AL', // NOVA DATA INSERIDA
+  'INVOICE RECEIPT', 'SHIPPING INSTRUCTIONS', 'ETD', 'ETA / ATA', 'DATA AUX AL', // ETD INSERIDO AQUI
   'ID REGISTRATION DATE', 'CUSTOMS CLEARANCE', 'DANFE REQUEST DATE', 'DANFE DATE', 'DELIVERY DATE'
 ];
 
 const LEAD_TIMES = [
   { col: 'Invoice receipt x GL',              a: 'SHIPPING INSTRUCTIONS',    b: 'INVOICE RECEIPT' },
-  { col: 'GL x ARR',                          a: 'ETA / ATA',                b: 'SHIPPING INSTRUCTIONS' },
-  { col: 'ARR x ID Reg',                      a: 'ID REGISTRATION DATE',     b: 'DATA AUX AL' }, // <- LINHA NOVA ALVO CORRIGIDO
+  { col: 'GL x ETD',                          a: 'ETD',                      b: 'SHIPPING INSTRUCTIONS' }, // NOVA MÉTRICA
+  { col: 'ETD x ARR',                         a: 'ETA / ATA',                b: 'ETD' },                   // NOVA MÉTRICA
+  { col: 'ARR x ID Reg',                      a: 'ID REGISTRATION DATE',     b: 'DATA AUX AL' },
   { col: 'Reg x CC',                          a: 'CUSTOMS CLEARANCE',        b: 'ID REGISTRATION DATE' },
   { col: 'Solicitação - CC x NF Request',     a: 'DANFE REQUEST DATE',       b: 'CUSTOMS CLEARANCE' },
   { col: 'Recebimento - CC x NF Request',     a: 'DANFE DATE',               b: 'DANFE REQUEST DATE' },
